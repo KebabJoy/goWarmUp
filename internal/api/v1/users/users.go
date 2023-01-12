@@ -1,9 +1,9 @@
 package users
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"net/http"
 )
 
@@ -21,7 +21,7 @@ type Users struct {
 }
 
 type Loader struct {
-	MainDb *sql.DB
+	MainDb *sqlx.DB
 	//cache *cache.Cache
 }
 

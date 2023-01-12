@@ -1,8 +1,8 @@
-package v1
+package routes
 
 import (
-	"VSpace/internal/api/v1/users"
-	"VSpace/internal/conns"
+	"Application/internal/api/v1/files"
+	"Application/internal/conns"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -17,7 +17,7 @@ func NewSubrouter(router *mux.Router, conns *conns.Conns) *Subrouter {
 	return &Subrouter{subrouter, conns}
 }
 
-func (s *Subrouter) SetupRoutes() {
-	usersController := users.Loader{MainDb: s.conns.MainDB}
-	s.router.HandleFunc("/users", usersController.GetUsers).Methods(http.MethodGet)
+func (s *Subrouter) Setup() {
+	zipController := files.Controller{MainDb: s.conns.MainDB}
+	s.router.HandleFunc("/zip", zipController.Create).Methods(http.MethodPost)
 }

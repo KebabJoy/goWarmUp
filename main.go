@@ -1,12 +1,11 @@
 package main
 
 import (
-	"VSpace/internal/api"
-	"VSpace/internal/conns"
+	"Application/internal/api"
+	"Application/internal/conns"
 	"context"
-	"database/sql"
-	"github.com/gorilla/mux"
-	"strings"
+	"fmt"
+	"github.com/jmoiron/sqlx"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -22,51 +21,45 @@ func main() {
 		"localhost:3306",
 		"root",
 		"",
-		"_development",
+		"zip_dev",
 	)
 	if err != nil {
 		logger.Fatal("ERROR OPENING DB CONNECTION", zap.Error(err))
 	}
 
-	router := mux.NewRouter()
 	apiCon := api.New(
 		conns.New(
 			dbMain,
 		),
-		router,
 		logger,
 	)
 	logger.Log(zap.ErrorLevel, "OK!")
-	apiCon.ConfigServer()
+	apiCon.Config()
 	logger.Log(zap.ErrorLevel, "OK!")
 }
 
-func openDB(ctx context.Context, addr, user, pwd, dbname string) (*sql.DB, error) {
-	cnf := mysql.NewConfig()
-	cnf.Addr = addr
-	cnf.User = user
-	cnf.Passwd = pwd
-	cnf.DBName = dbname
+func openDB(ctx context.Context, addr, user, pwd, dbname string) (*sqlx.DB, error) {
+	cnf := &mysql.Config{
+		User:                 user,
+		Net:                  "tcp",
+		Addr:                 addr,
+		DBName:               dbname,
+		AllowNativePasswords: true,
+		RejectReadOnly:       false,
+		MaxAllowedPacket:     0,
+		ParseTime:            true,
+	}
 
-	cnf.AllowNativePasswords = true
-	cnf.CheckConnLiveness = true
-	cnf.RejectReadOnly = false
-	cnf.MaxAllowedPacket = 0
-	cnf.ParseTime = true
-
-	conn, err := mysql.NewConnector(cnf)
+	dsn := cnf.FormatDSN()
+	db, err := sqlx.Connect("mysql", dsn)
 	if err != nil {
 		return nil, err
 	}
-	db := sql.OpenDB(conn)
-	if err := db.Ping(); err != nil && strings.Contains(err.Error(), "insecure") {
-		cnf.TLSConfig = "skip-verify"
-		conn, err = mysql.NewConnector(cnf)
-		if err != nil {
-			return nil, err
-		}
-		db = sql.OpenDB(conn)
+	if err := db.Ping(); err != nil {
+		fmt.Println("Can't connect to MySQL database on", addr)
+		return nil, err
 	}
+
 	db.SetMaxOpenConns(60)
 	db.SetMaxIdleConns(60)
 	db.SetConnMaxIdleTime(60 * time.Second)
