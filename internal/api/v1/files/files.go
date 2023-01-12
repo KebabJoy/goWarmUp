@@ -1,6 +1,8 @@
 package files
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	maxFileSize = 1e10
@@ -11,14 +13,14 @@ const (
 )
 
 type Record struct {
-	ID      int `db:"id"`
-	Success int `db:"success"`
+	Success  int `db:"success"`
+	Filename int `db:"filename"`
 }
 
 type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	JobId   string `json:"job_id,omitempty"`
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	Filename string `json:"filename,omitempty"`
 }
 
 func (c *Controller) loadFiles() []Record {
@@ -29,21 +31,21 @@ func failedResponse(msg string) Response {
 	return Response{Success: false, Message: msg}
 }
 
-func (c *Controller) fetchLastId() (int, error) {
+func (c *Controller) fetchLastRecord(filename string) (*Record, error) {
 	rows, err := c.MainDb.Queryx(dbQuery + " ORDER BY id DESC LIMIT 1")
 	if err != nil {
 		fmt.Println("ERROR ON FETCHING LAST ID QUERY", err)
-		return 0, err
+		return &Record{}, err
 	}
 
+	var rec Record
 	for rows.Next() {
-		var rec Record
 		if err = rows.StructScan(&rec); err != nil {
 			fmt.Println("ERROR ON SCANNING LAST ID RECORD", err)
-			return 0, err
+			return &Record{}, err
 		}
 		fmt.Println(rec)
 	}
 
-	return 0, nil
+	return &rec, nil
 }
