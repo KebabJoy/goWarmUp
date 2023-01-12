@@ -1,14 +1,12 @@
 package conns
 
-import (
-	"database/sql"
-)
+import "github.com/jmoiron/sqlx"
 
 type Conns struct {
-	MainDB *sql.DB
+	MainDB *sqlx.DB
 	//Cache  *cache.Cache
 }
 
-func New(mainDB *sql.DB) *Conns {
+func New(mainDB *sqlx.DB) *Conns {
 	return &Conns{mainDB}
 }
