@@ -1,23 +1,40 @@
 package files
 
 import (
+	"archive/zip"
 	"fmt"
+	"io"
 	"os"
-	"strconv"
 )
 
-func buildZip(fileId int, format string) {
-	archive, err := os.Create("archive.zip")
+func (c *Controller) buildZip(archiveName string, filename string) error {
+	archive, err := os.Create(archiveName + ".zip")
 	if err != nil {
-		panic(err)
+		fmt.Println("ERROR creating archive", err)
+		return err
 	}
 	defer archive.Close()
-	//zipWriter := zip.NewWriter(archive)
 
-	fmt.Println("opening first file...")
-	f1, err := os.Open("uploaded-" + strconv.Itoa(fileId) + "." + format)
-	if err != nil {
-		panic(err)
-	}
+	zipWriter := zip.NewWriter(archive)
+	defer zipWriter.Close()
+
+	f1, err := os.Open(filename)
 	defer f1.Close()
+	if err != nil {
+		fmt.Println("ERROR opening first file...")
+		return err
+	}
+
+	w1, err := zipWriter.Create(filename)
+	if err != nil {
+		fmt.Println("ERROR creating first file...")
+		return err
+	}
+	if _, err := io.Copy(w1, f1); err != nil {
+		fmt.Println("ERROR copying first file...")
+		return err
+	}
+
+	c.MainDb.Queryx("INSERT INTO zip_logs (success, filename) VALUES (TRUE, ?)", archiveName)
+	return nil
 }
