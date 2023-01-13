@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"io/ioutil"
 	"net/http"
@@ -14,14 +15,30 @@ type Controller struct {
 	MainDb *sqlx.DB
 }
 
+func (c *Controller) Show(w http.ResponseWriter, req *http.Request) {
+	params := mux.Vars(req)
+	if !c.recordExists(params["filename"]) {
+
+	}
+}
+
+func (c *Controller) Index(w http.ResponseWriter, _ *http.Request) {
+	files, err := c.loadFiles()
+	if err != nil {
+		failedResponse(w, err.Error())
+		return
+	}
+
+	json.NewEncoder(w).Encode(files)
+}
+
 func (c *Controller) Create(w http.ResponseWriter, req *http.Request) {
-	fmt.Println(c.loadFiles())
 	req.ParseMultipartForm(maxFileSize)
 
 	file, handler, err := req.FormFile("myFile")
 	if err != nil {
 		// На клиент кнш не круто отдавать такие сообщения, это я для дебага через постман сделал
-		json.NewEncoder(w).Encode(failedResponse(err.Error()))
+		failedResponse(w, err.Error())
 		return
 	}
 
@@ -40,7 +57,7 @@ func (c *Controller) Create(w http.ResponseWriter, req *http.Request) {
 	archiveName := uuid.New().String()
 	err = c.buildZip(archiveName, tempFile.Name())
 	if err != nil {
-		json.NewEncoder(w).Encode(failedResponse(err.Error()))
+		failedResponse(w, err.Error())
 		return
 	}
 	fmt.Println("SUCCESS: ", file)
