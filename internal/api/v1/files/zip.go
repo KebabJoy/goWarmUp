@@ -7,8 +7,12 @@ import (
 	"os"
 )
 
+const (
+	fileFormat = ".zip"
+)
+
 func (c *Controller) buildZip(archiveName string, filename string) error {
-	archive, err := os.Create(archiveName + ".zip")
+	archive, err := os.Create(archiveName + fileFormat)
 	if err != nil {
 		fmt.Println("ERROR creating archive", err)
 		return err

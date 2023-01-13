@@ -10,11 +10,12 @@ const (
 	maxFileSize = 1e10
 	// success добавляли изначально, думал буду делать асинхронную архивацию файлов.
 	// Чтобы потом по ID джобы можно было получить файл либо узнать, что еще не запроцессилось. Но не хочется много времени на тестовое тратить..
-	dbQuery = `SELECT
+	dbQueryIndex = `SELECT
 				id,
 				success,
 				filename
 				FROM zip_logs`
+	dbQueryExists = `SELECT COUNT(1) FROM zip_logs WHERE filename=?`
 )
 
 type Record struct {
@@ -32,7 +33,7 @@ type Response struct {
 func (c *Controller) loadFiles() ([]Record, error) {
 	// Сори, без пагинации(
 	var files []Record
-	err := c.MainDb.Select(&files, dbQuery)
+	err := c.MainDb.Select(&files, dbQueryIndex)
 	if err != nil {
 		fmt.Println("ERROR ON FETCHING FILES QUERY", err)
 		return []Record{}, err
@@ -47,21 +48,12 @@ func failedResponse(w http.ResponseWriter, msg string) {
 }
 
 func (c *Controller) recordExists(filename string) (bool, error) {
-	rows, err := c.MainDb.Queryx(dbQuery)
-	defer rows.Close()
+	var check bool
+	err := c.MainDb.Get(&check, dbQueryExists, filename)
 	if err != nil {
-		fmt.Println("ERROR ON FETCHING LAST ID QUERY", err)
+		fmt.Println("ERROR ON FETCHING EXISTS QUERY", err)
 		return false, err
 	}
 
-	var rec Record
-	for rows.Next() {
-		if err = rows.StructScan(&rec); err != nil {
-			fmt.Println("ERROR ON SCANNING LAST ID RECORD", err)
-			return false, err
-		}
-		fmt.Println(rec)
-	}
-
-	return false, nil
+	return true, nil
 }
